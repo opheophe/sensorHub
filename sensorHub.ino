@@ -77,7 +77,7 @@ void setMillisMod() {
   Serial.print(":");
   Serial.print(set_clock_sec);
   Serial.println("");
-  // Last 250 is to calibrate for 
+  // Last 250 is to calibrate for
   millismod = set_clock_sec * 1L + set_clock_min * 1 * 60L + set_clock_hour * 1 * 60 * 60L;
   Serial.print("--> ");
   Serial.print(millismod);
@@ -210,6 +210,7 @@ String decode_value(unsigned long input) {
         backlight_state = 0;
         lcd.backlight();
       }
+      delay(1000);
       break;
     case 0xFF02FD:
       Serial.println("OK   ");
@@ -296,7 +297,7 @@ void loop()
     lcd.print("                ");
     lcd.setCursor(0, 1);
     lcd.print("INT: ");
-    time((millis()-600L)/1000L+millismod);
+    time((millis() - 600L) / 1000L + millismod);
     lcd.print("                ");
   } else if (current_screen == 1) {
     screen_counter++;
