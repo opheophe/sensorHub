@@ -290,7 +290,7 @@ void loop()
     delay(1000);
   }
 
-  if (current_screen == 0) {
+  if (current_screen == 0) { // default display
     lcd.setCursor(0, 0);
     lcd.print("RTC: ");
     lcd.print(rtc.formatTime());
@@ -299,7 +299,7 @@ void loop()
     lcd.print("INT: ");
     time((millis() - 600L) / 1000L + millismod);
     lcd.print("                ");
-  } else if (current_screen == 1) {
+  } else if (current_screen == 1) { // button clicked display
     screen_counter++;
     if (screen_counter == 50) {
       current_screen = 0;
@@ -309,11 +309,12 @@ void loop()
     lcd.print("RTC: ");
     lcd.print(rtc.formatTime());
     lcd.print("                ");
-  } else if (current_screen == 2) { // Set clock
+  } else if (current_screen == 2) { // Set clock display
     if (screen_counter == 500) {
       current_screen = 0;
       screen_counter = 0;
     }
+    screen_counter++;
     lcd.setCursor(0, 0);
     lcd.print("SET: ");
     printDigits(set_clock_hour);
