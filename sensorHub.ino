@@ -163,7 +163,7 @@ class Alarm {
           }
           return true;
         }
-      } else if (timeLeft < -60){
+      } else if (timeLeft < -60) {
         triggered = false;
       }
       return false;
@@ -278,7 +278,6 @@ String decode_value(unsigned long input) {
       break;
     case 0xFF30CF:
       Serial.println("4    ");
-
       lcd.print("4    ");
       break;
     case 0xFF18E7:
