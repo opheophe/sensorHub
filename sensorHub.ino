@@ -4,6 +4,7 @@
 #include <IRremote.h>
 #include <Servo.h>
 
+
 //init the real time clock
 Rtc_Pcf8563 rtc;
 LiquidCrystal_I2C lcd(0x27, 20, 4);
@@ -41,6 +42,25 @@ int set_clock_min = 0;
 int set_clock_sec = 0;
 long millismod = 0;
 
+class Alarm{
+
+  public:
+  void setup(){
+
+  }
+
+  void set(int sec){
+    
+  }
+  void print(){
+
+  }
+  
+  
+};
+
+Alarm alarm1;
+
 void setup()
 {
   // Init clock
@@ -61,24 +81,16 @@ void setup()
   pinMode(backlight_toggle, INPUT);
   Serial.begin(9600);
   setMillisMod();
+  Serial.println();
+  alarm1.print();
 
 
 
 }
 
 void setMillisMod() {
-  set_clock_hour = String(rtc.formatTime()).substring(0, 2).toInt();
-  set_clock_min = String(rtc.formatTime()).substring(3, 5).toInt();
-  set_clock_sec = String(rtc.formatTime()).substring(6, 8).toInt();
   Serial.println("## SET MILLISMOD");
-  Serial.print(set_clock_hour);
-  Serial.print(":");
-  Serial.print(set_clock_min);
-  Serial.print(":");
-  Serial.print(set_clock_sec);
-  Serial.println("");
-  // Last 250 is to calibrate for
-  millismod = set_clock_sec * 1L + set_clock_min * 1 * 60L + set_clock_hour * 1 * 60 * 60L;
+  millismod = rtc.getSecond() * 1L + rtc.getMinute() * 1 * 60L + rtc.getHour() * 1 * 60 * 60L;
   Serial.print("--> ");
   Serial.print(millismod);
 }
@@ -90,8 +102,6 @@ void setRTC_clock() {
   //  rtc.setTime(0, 0, 0);
   //day, weekday, month, century(1=1900, 0=2000), year(0-99)
   rtc.setDate(16, 5, 6, 0, 18);
-
-
 
   // Print the date
   // Serial.print(rtc.formatDate());
@@ -166,6 +176,7 @@ String decode_value(unsigned long input) {
       break;
     case 0xFF30CF:
       Serial.println("4    ");
+      alarm1.print();
       lcd.print("4    ");
       break;
     case 0xFF18E7:
@@ -194,9 +205,9 @@ String decode_value(unsigned long input) {
       break;
     case 0xFF42BD: // *
       lcd.print("SET CLOCK   ");
-      set_clock_hour = String(rtc.formatTime()).substring(0, 2).toInt();
-      set_clock_min = String(rtc.formatTime()).substring(3, 5).toInt();
-      set_clock_sec = String(rtc.formatTime()).substring(6, 8).toInt();
+      set_clock_hour = rtc.getHour();
+      set_clock_min = rtc.getMinute();
+      set_clock_sec = rtc.getSecond();
       set_clock_stage = 0;
       current_screen = 2;
       break;
