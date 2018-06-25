@@ -20,6 +20,8 @@ int servo2_pin = 11;
 Servo servo1;
 Servo servo2;
 
+
+
 // These are used for the internal clock
 /* Useful Constants */
 #define SECS_PER_MIN  (60UL)
@@ -42,21 +44,49 @@ int set_clock_min = 0;
 int set_clock_sec = 0;
 long millismod = 0;
 
-class Alarm{
+class Alarm {
+    boolean triggered = false;
+    boolean active = false;
+    int hour=0;
+    int minute=0;
+    int second=0;
 
   public:
-  void setup(){
+    void setup() {
 
-  }
+    }
 
-  void set(int sec){
-    
-  }
-  void print(){
+    void start() {
+      active = true;
+    }
 
-  }
-  
-  
+    void stop() {
+      active = false;
+    }
+
+    void reset() {
+      active = true;
+      triggered = false;
+    }
+
+    void set(int h, int m, int s) {
+      hour = h;
+      minute = m;
+      second = s;
+      triggered = false;
+      active = true;
+    }
+    String getAlarm() {
+      char buffer[50];
+      sprintf(buffer, "%02d:%02d:%02d", 1,2,3);
+      return String(buffer);
+    }
+
+    boolean checkAlarm() {
+      return true;
+    }
+
+
 };
 
 Alarm alarm1;
@@ -65,6 +95,7 @@ void setup()
 {
   // Init clock
   setRTC_clock();
+  setMillisMod();
 
   // INIT LCD
   lcd.init();
@@ -80,19 +111,12 @@ void setup()
   // Allows toggling of backligt
   pinMode(backlight_toggle, INPUT);
   Serial.begin(9600);
-  setMillisMod();
-  Serial.println();
-  alarm1.print();
-
 
 
 }
 
 void setMillisMod() {
-  Serial.println("## SET MILLISMOD");
   millismod = rtc.getSecond() * 1L + rtc.getMinute() * 1 * 60L + rtc.getHour() * 1 * 60 * 60L;
-  Serial.print("--> ");
-  Serial.print(millismod);
 }
 
 void setRTC_clock() {
@@ -176,7 +200,8 @@ String decode_value(unsigned long input) {
       break;
     case 0xFF30CF:
       Serial.println("4    ");
-      alarm1.print();
+    Serial.println(alarm1.getAlarm());
+
       lcd.print("4    ");
       break;
     case 0xFF18E7:
