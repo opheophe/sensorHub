@@ -3,6 +3,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <IRremote.h>
 #include <Servo.h>
+#include <Math.h>
 
 
 //init the real time clock
@@ -44,12 +45,28 @@ int set_clock_min = 0;
 int set_clock_sec = 0;
 long millismod = 0;
 
+void closeBlinds() {
+  Serial.println("Closing");
+  lcd.print("Closing     ");
+  moveto(1, 0);
+  moveto(2, 180);
+}
+
+void openBlinds() {
+  Serial.println("Opening");
+  lcd.print("Opening       ");
+  moveto(1, 180);
+  moveto(2, 0);
+}
+
 class Alarm {
     boolean triggered = false;
     boolean active = false;
     int hour = 0;
     int minute = 0;
     int second = 0;
+    long timeTillAlarm = 0;
+    String action = "";
 
   public:
     void setup() {
@@ -69,27 +86,76 @@ class Alarm {
       triggered = false;
     }
 
-    void set(int h, int m, int s) {
+    void set(String a, int h, int m) {
+      action = a;
       hour = h;
       minute = m;
-      second = s;
+      second = 0;
       triggered = false;
       active = true;
     }
+
+
     String getAlarm() {
       char buffer[50];
-      sprintf(buffer, "%02d:%02d:%02d", 1, 2, 3);
+      sprintf(buffer, "%02d:%02d:%02d", hour, minute, second);
       return String(buffer);
     }
 
+    long getTimeLeft() {
+      long left = (hour * 60L * 60L + minute * 60L + second + timeTillAlarm) -
+                  (rtc.getHour() * 60L * 60L + rtc.getMinute() * 60L + rtc.getSecond());
+
+
+      if ((left < -60) || (triggered && (left < -0 ) )) {
+        left = left + 24 * 60 * 60L;
+      }
+
+      return left;
+    }
+
+    String getTimeLeftFormat() {
+      long time_left = getTimeLeft();
+      int hours = numberOfHours(time_left);
+      int minutes = numberOfMinutes(time_left);
+      int seconds = numberOfSeconds(time_left);
+      char buffer[50];
+      sprintf(buffer, "%02d:%02d:%02d", hours, minutes, seconds);
+      return (String(buffer));
+
+
+    }
+
     boolean checkAlarm() {
-      return true;
+      if  ((rtc.getHour() == hour) && rtc.getMinute() == minute) {
+        if (triggered) {
+          // Do nothing, already triggered
+        } else {
+          triggered = true;
+          if (action == "CLOSE") {
+            closeBlinds();
+          } else if (action=="OPEN"){
+            openBlinds();
+          }
+
+
+          Serial.println("ALAAAAAAARM");
+          return true;
+        }
+      } else {
+        triggered = false;
+      }
+      Serial.print(action);
+      Serial.print(": ");
+      Serial.println(getTimeLeftFormat());
+      return false;
     }
 
 
 };
 
-Alarm alarm1;
+Alarm alarmClose;
+Alarm alarmOpen;
 
 void setup()
 {
@@ -111,6 +177,9 @@ void setup()
   // Allows toggling of backligt
   pinMode(backlight_toggle, INPUT);
   Serial.begin(9600);
+  alarmClose.set("CLOSE", 20, 15);
+  alarmOpen.set("OPEN", 20, 16);
+
 
 
 }
@@ -142,7 +211,7 @@ void printMillisTime(long val) {
   int minutes = numberOfMinutes(val);
   int seconds = numberOfSeconds(val);
   char buffer[50];
-  sprintf(buffer, "%02d:%02d:%02d", hours,minutes, seconds);
+  sprintf(buffer, "%02d:%02d:%02d", hours, minutes, seconds);
   lcd.print(String(buffer));
 }
 
@@ -167,17 +236,17 @@ void moveto(int servonum, int angle) {
   }
 }
 
+
+
+
 String decode_value(unsigned long input) {
   lcd.setCursor(0, 1);
   switch (input)  {
-    case 0xFF6897:
+    case 0xFF6897: //1
       current_screen = 1;
-      Serial.println("Turning 0   ");
-      lcd.print("Turning 0   ");
-      moveto(1, 0);
-      moveto(2, 180);
+      closeBlinds();
       break;
-    case 0xFF9867:
+    case 0xFF9867: //2
       current_screen = 1;
       Serial.println("Turning 90   ");
       lcd.print("Turning 90   ");
@@ -185,16 +254,12 @@ String decode_value(unsigned long input) {
 
       moveto(2, 90);
       break;
-    case 0xFFB04F:
+    case 0xFFB04F: // 3
       current_screen = 1;
-      Serial.println("Turning 180   ");
-      lcd.print("Turning 180   ");
-      moveto(1, 180);
-      moveto(2, 0);
+      openBlinds();
       break;
     case 0xFF30CF:
       Serial.println("4    ");
-      Serial.println(alarm1.getAlarm());
 
       lcd.print("4    ");
       break;
@@ -309,6 +374,10 @@ String decode_value(unsigned long input) {
 
 void loop()
 {
+
+  alarmClose.checkAlarm();
+  alarmOpen.checkAlarm();
+
   if (digitalRead(backlight_toggle)) {
     if (backlight_state == 0) {
       backlight_state = 1;
@@ -327,7 +396,7 @@ void loop()
     lcd.print("                ");
     lcd.setCursor(0, 1);
     lcd.print("INT: ");
-    printMillisTime((millis()+0L) / 1000L + millismod);
+    printMillisTime((millis() + 0L) / 1000L + millismod);
     lcd.print("                ");
   } else if (current_screen == 1) { // button clicked display
     screen_counter++;
