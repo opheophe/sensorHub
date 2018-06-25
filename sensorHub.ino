@@ -47,14 +47,16 @@ long millismod = 0;
 
 void closeBlinds() {
   Serial.println("Closing");
-  lcd.print("Closing     ");
+  lcd.setCursor(0, 1);
+  lcd.print("Closing blinds  ");
   moveto(1, 0);
   moveto(2, 180);
 }
 
 void openBlinds() {
   Serial.println("Opening");
-  lcd.print("Opening       ");
+  lcd.setCursor(0, 1);
+  lcd.print("Opening blinds  ");
   moveto(1, 180);
   moveto(2, 0);
 }
@@ -65,7 +67,6 @@ class Alarm {
     int hour = 0;
     int minute = 0;
     int second = 0;
-    long timeTillAlarm = 0;
     String action = "";
 
   public:
@@ -90,14 +91,23 @@ class Alarm {
       triggered = false;
     }
 
-    void set(String a, int h, int m) {
+    void set(String a, int h, int m, int s) {
       action = a;
       hour = h;
       minute = m;
-      second = 0;
+      second = s;
       triggered = false;
       active = true;
     }
+
+    //    void setIn(String, int h, int m, int s){
+    //      hour=rtc.getHour();
+    //      minute=rtc.getMinute();
+    //
+    //
+    //
+    //
+    //    }
 
 
     String getAlarm() {
@@ -107,11 +117,11 @@ class Alarm {
     }
 
     long getTimeLeft() {
-      long left = (hour * 60L * 60L + minute * 60L + second + timeTillAlarm) -
-                  (rtc.getHour() * 60L * 60L + rtc.getMinute() * 60L + rtc.getSecond());
+      long left = (hour * 60L * 60L + minute * 60L + second * 1L) -
+                  (rtc.getHour() * 60L * 60L + rtc.getMinute() * 60L + rtc.getSecond() * 1L);
 
 
-      if ((left < -60) || (triggered && (left < -0 ) )) {
+      if ((left < -60) || (triggered && (left < 0 ) )) {
         left = left + 24 * 60 * 60L;
       }
 
@@ -131,27 +141,31 @@ class Alarm {
     }
 
     boolean checkAlarm() {
-      if  ((rtc.getHour() == hour) && rtc.getMinute() == minute) {
+      //      if  ((rtc.getHour() == hour) && rtc.getMinute() == minute) {
+      long timeLeft = getTimeLeft();
+
+      if ( (timeLeft < 1) && (timeLeft > -60)) {
         if (triggered) {
           // Do nothing, already triggered
         } else {
           triggered = true;
+          //   Serial.println("ALAAAAAAARM");
           if (action == "CLOSE") {
+            Serial.print(action);
+            Serial.print(": ");
+            Serial.print(getTimeLeftFormat());
+            Serial.print(": ");
+            Serial.print(getTimeLeft());
+            Serial.print(" ");
             closeBlinds();
           } else if (action == "OPEN") {
             openBlinds();
           }
-
-
-          Serial.println("ALAAAAAAARM");
           return true;
         }
-      } else {
+      } else if (timeLeft < -60){
         triggered = false;
       }
-      Serial.print(action);
-      Serial.print(": ");
-      Serial.println(getTimeLeftFormat());
       return false;
     }
 
@@ -181,8 +195,8 @@ void setup()
   // Allows toggling of backligt
   pinMode(backlight_toggle, INPUT);
   Serial.begin(9600);
-  alarmClose.set("CLOSE", 21, 30);
-  alarmOpen.set("OPEN", 8, 0);
+  alarmClose.set("CLOSE", 21, 30, 0);
+  alarmOpen.set("OPEN", 8, 0, 0);
 
 
 
@@ -400,7 +414,7 @@ void loop()
     lcd.print("                ");
     lcd.setCursor(0, 1);
 
-    if (alarmClose.getTimeLeft()>alarmOpen.getTimeLeft()){
+    if (alarmClose.getTimeLeft() > alarmOpen.getTimeLeft()) {
       lcd.print(alarmOpen.getTimeLeftFormat());
       lcd.print(" ");
       lcd.print(alarmOpen.getAction());
@@ -409,9 +423,6 @@ void loop()
       lcd.print(" ");
       lcd.print(alarmClose.getAction());
     }
-
-
-
     lcd.print("                ");
   } else if (current_screen == 1) { // button clicked display
     screen_counter++;
