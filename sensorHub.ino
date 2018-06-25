@@ -141,11 +141,8 @@ void printMillisTime(long val) {
   int hours = numberOfHours(val);
   int minutes = numberOfMinutes(val);
   int seconds = numberOfSeconds(val);
-
-  
   char buffer[50];
   sprintf(buffer, "%02d:%02d:%02d", hours,minutes, seconds);
-  Serial.println(buffer);
   lcd.print(String(buffer));
 }
 
