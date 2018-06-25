@@ -73,6 +73,10 @@ class Alarm {
 
     }
 
+    String getAction() {
+      return action;
+    }
+
     void start() {
       active = true;
     }
@@ -134,7 +138,7 @@ class Alarm {
           triggered = true;
           if (action == "CLOSE") {
             closeBlinds();
-          } else if (action=="OPEN"){
+          } else if (action == "OPEN") {
             openBlinds();
           }
 
@@ -177,8 +181,8 @@ void setup()
   // Allows toggling of backligt
   pinMode(backlight_toggle, INPUT);
   Serial.begin(9600);
-  alarmClose.set("CLOSE", 20, 15);
-  alarmOpen.set("OPEN", 20, 16);
+  alarmClose.set("CLOSE", 21, 30);
+  alarmOpen.set("OPEN", 8, 0);
 
 
 
@@ -372,6 +376,7 @@ String decode_value(unsigned long input) {
   }
 }
 
+
 void loop()
 {
 
@@ -391,12 +396,22 @@ void loop()
 
   if (current_screen == 0) { // default display
     lcd.setCursor(0, 0);
-    lcd.print("RTC: ");
     lcd.print(rtc.formatTime());
     lcd.print("                ");
     lcd.setCursor(0, 1);
-    lcd.print("INT: ");
-    printMillisTime((millis() + 0L) / 1000L + millismod);
+
+    if (alarmClose.getTimeLeft()>alarmOpen.getTimeLeft()){
+      lcd.print(alarmOpen.getTimeLeftFormat());
+      lcd.print(" ");
+      lcd.print(alarmOpen.getAction());
+    } else {
+      lcd.print(alarmClose.getTimeLeftFormat());
+      lcd.print(" ");
+      lcd.print(alarmClose.getAction());
+    }
+
+
+
     lcd.print("                ");
   } else if (current_screen == 1) { // button clicked display
     screen_counter++;
