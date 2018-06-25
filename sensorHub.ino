@@ -47,9 +47,9 @@ long millismod = 0;
 class Alarm {
     boolean triggered = false;
     boolean active = false;
-    int hour=0;
-    int minute=0;
-    int second=0;
+    int hour = 0;
+    int minute = 0;
+    int second = 0;
 
   public:
     void setup() {
@@ -78,7 +78,7 @@ class Alarm {
     }
     String getAlarm() {
       char buffer[50];
-      sprintf(buffer, "%02d:%02d:%02d", 1,2,3);
+      sprintf(buffer, "%02d:%02d:%02d", 1, 2, 3);
       return String(buffer);
     }
 
@@ -137,19 +137,16 @@ void setRTC_clock() {
 }
 
 
-void time(long val) {
-  int days = elapsedDays(val);
+void printMillisTime(long val) {
   int hours = numberOfHours(val);
   int minutes = numberOfMinutes(val);
   int seconds = numberOfSeconds(val);
 
-  // digital clock display of current time
-  //Serial.print(days,DEC);
-  printDigits(hours);
-  lcd.print(":");
-  printDigits(minutes);
-  lcd.print(":");
-  printDigits(seconds);
+  
+  char buffer[50];
+  sprintf(buffer, "%02d:%02d:%02d", hours,minutes, seconds);
+  Serial.println(buffer);
+  lcd.print(String(buffer));
 }
 
 void printDigits(byte digits) {
@@ -200,7 +197,7 @@ String decode_value(unsigned long input) {
       break;
     case 0xFF30CF:
       Serial.println("4    ");
-    Serial.println(alarm1.getAlarm());
+      Serial.println(alarm1.getAlarm());
 
       lcd.print("4    ");
       break;
@@ -333,7 +330,7 @@ void loop()
     lcd.print("                ");
     lcd.setCursor(0, 1);
     lcd.print("INT: ");
-    time((millis() - 600L) / 1000L + millismod);
+    printMillisTime((millis()+0L) / 1000L + millismod);
     lcd.print("                ");
   } else if (current_screen == 1) { // button clicked display
     screen_counter++;
