@@ -61,113 +61,6 @@ void openBlinds() {
   Serial.println("Opening : Done");
 }
 
-class Alarm {
-    boolean triggered = false;
-    boolean active = false;
-    int hour = 0;
-    int minute = 0;
-    int second = 0;
-    String action = "";
-
-  public:
-    void setup() {
-
-    }
-
-    String getAction() {
-      Serial.print("--> Current 0 Get action : ");
-      Serial.println(action);
-      return action;
-    }
-
-    void start() {
-      active = true;
-    }
-
-    void stop() {
-      active = false;
-    }
-
-    void reset() {
-      active = true;
-      triggered = false;
-    }
-
-    void set(String a, int h, int m, int s) {
-      action = a;
-      hour = h;
-      minute = m;
-      second = s;
-      triggered = false;
-      active = true;
-    }
-
-    String getAlarm() {
-      char buffer[50];
-      sprintf(buffer, "%02d:%02d:%02d", hour, minute, second);
-      return String(buffer);
-    }
-
-    long getTimeLeft() {
-      Serial.println("--> Current 0 : Get time left : Start");
-      long left = (hour * 60L * 60L + minute * 60L + second * 1L) -
-                  (rtc.getHour() * 60L * 60L + rtc.getMinute() * 60L + rtc.getSecond() * 1L);
-
-      Serial.println("--> Current 0 : Get time left : If");
-      if ((left < -60) || (triggered && (left < 0 ) )) {
-        left = left + 24 * 60 * 60L;
-      }
-      Serial.print("--> Current 0 : Get time left : Return : ");
-      Serial.println(left);
-      return left;
-    }
-
-    String getTimeLeftFormat() {
-      long time_left = getTimeLeft();
-      int hours = numberOfHours(time_left);
-      int minutes = numberOfMinutes(time_left);
-      int seconds = numberOfSeconds(time_left);
-      char buffer[50];
-      sprintf(buffer, "%02d:%02d:%02d", hours, minutes, seconds);
-      return (String(buffer));
-
-
-    }
-
-    boolean checkAlarm() {
-      //      if  ((rtc.getHour() == hour) && rtc.getMinute() == minute) {
-      long timeLeft = getTimeLeft();
-
-      if ( (timeLeft < 1) && (timeLeft > -60)) {
-        if (triggered) {
-          // Do nothing, already triggered
-        } else {
-          triggered = true;
-          //   Serial.println("ALAAAAAAARM");
-          if (action == "CLOSE") {
-            Serial.print(action);
-            Serial.print(": ");
-            Serial.print(getTimeLeftFormat());
-            Serial.print(": ");
-            Serial.print(getTimeLeft());
-            Serial.print(" ");
-            closeBlinds();
-          } else if (action == "OPEN") {
-            openBlinds();
-          }
-          return true;
-        }
-      } else if (timeLeft < -60) {
-        triggered = false;
-      }
-      return false;
-    }
-
-
-};
-
-Alarm alarmClose;
-Alarm alarmOpen;
 
 void setup()
 {
@@ -187,8 +80,6 @@ void setup()
   // Allows toggling of backligt
   pinMode(backlight_toggle, INPUT);
   Serial.begin(9600);
-  alarmClose.set("CLOSE", 21, 30, 0);
-  alarmOpen.set("OPEN", 8, 0, 0);
 
 
 
@@ -278,16 +169,16 @@ String decode_value(unsigned long input) {
       current_screen = 2;
       break;
     case 0xFF52AD: // #
-      Serial.println("Backlight");
-      lcdPrint(0, 1, "Backlight");
       if (backlight_state == 0) {
+        Serial.println("Backlight : Off");
         backlight_state = 1;
         lcd.noBacklight();
       } else {
+        Serial.println("Backlight : On");
         backlight_state = 0;
         lcd.backlight();
       }
-      delay(1000);
+      delay(500);
       break;
     case 0xFF02FD:
       Serial.println("OK   ");
@@ -324,7 +215,7 @@ String decode_value(unsigned long input) {
     case 0xFFC23D:
       Serial.println("RIGHT");
       break;
-    case 0xFFA857:
+    case 0xFFA857: //*
       if (current_screen == 2) {
         if (set_clock_stage == 0) { // Set hour
           set_clock_hour--;
@@ -391,9 +282,11 @@ void lcdClear() {
 void checkBacklightButton() {
   if (digitalRead(backlight_toggle)) {
     if (backlight_state == 0) {
+      Serial.println("Backlight : Off");
       backlight_state = 1;
       lcd.noBacklight();
     } else {
+      Serial.println("Backlight : On");
       backlight_state = 0;
       lcd.backlight();
     }
@@ -403,28 +296,12 @@ void checkBacklightButton() {
 
 void loop()
 {
-  Serial.println("--> Check Alarm : Close");
-  alarmClose.checkAlarm();
-
-  Serial.println("--> Check Alarm : Open");
-  alarmOpen.checkAlarm();
 
   Serial.println("--> Check backlight button");
   checkBacklightButton();
 
   Serial.println("--> Print current time");
   lcdPrint(0, 0, rtc.formatTime());
-
-  Serial.println("--> Print next alarm");
-  if (alarmClose.getTimeLeft() > alarmOpen.getTimeLeft()) {
-    Serial.println("--> Print next alarm : Alarm Open");
-    lcdPrint(0, 1, alarmOpen.getTimeLeftFormat());
-    lcdPrint(9, 1, alarmOpen.getAction());
-  } else {
-    Serial.println("--> Print next alarm : Alarm Close");
-    lcdPrint(0, 1, alarmClose.getTimeLeftFormat());
-    lcdPrint(9, 1, alarmClose.getAction());
-  }
 
   Serial.println("--> Check remote");
   if (irrecv.decode(&results)) {
