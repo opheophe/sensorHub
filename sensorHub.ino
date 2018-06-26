@@ -20,7 +20,7 @@ int servo1_pin = 12;
 int servo2_pin = 11;
 Servo servo1;
 Servo servo2;
-
+boolean debug_mode = false;
 
 
 // These are used for the internal clock
@@ -45,19 +45,38 @@ int set_clock_min = 0;
 int set_clock_sec = 0;
 long millismod = 0;
 
+int hour;
+int minute;
+int second;
+
+boolean trigger_close = false;
+boolean trigger_open = false;
+
+
 void closeBlinds() {
   Serial.println("Closing");
-  //lcdPrint(0, 1, "Closing blinds  ");
+  lcdPrint(0, 1, "Closing blinds  ");
   moveto(1, 0);
   moveto(2, 180);
+  lcdPrint(0, 1, "                ");
   Serial.println("Closing : Done");
 }
 
 void openBlinds() {
   Serial.println("Opening");
-  //lcdPrint(0, 1, "Opening blinds  ");
+  lcdPrint(0, 1, "Opening blinds  ");
   moveto(1, 180);
   moveto(2, 0);
+  lcdPrint(0, 1, "                ");
+  Serial.println("Opening : Done");
+}
+
+void halfBlinds() {
+  Serial.println("Half-open blinds");
+  lcdPrint(0, 1, "Half-open blinds");
+  moveto(1, 90);
+  moveto(2, 90);
+  lcdPrint(0, 1, "                ");
   Serial.println("Opening : Done");
 }
 
@@ -114,116 +133,47 @@ void moveto(int servonum, int angle) {
 String decode_value(unsigned long input) {
   switch (input)  {
     case 0xFF6897: //1
-      current_screen = 1;
       closeBlinds();
       break;
     case 0xFF9867: //2
-      current_screen = 1;
-      Serial.println("Turning 90   ");
-      lcdPrint(0, 1, "Turning 90   ");
-      moveto(1, 90);
-
-      moveto(2, 90);
+      halfBlinds();
       break;
     case 0xFFB04F: // 3
-      current_screen = 1;
       openBlinds();
       break;
-    case 0xFF30CF:
-      Serial.println("4    ");
+    case 0xFF30CF: // 4
       break;
-    case 0xFF18E7:
-      Serial.println("5    ");
+    case 0xFF18E7: // 5
       break;
-    case 0xFF7A85:
-      Serial.println("6    ");
+    case 0xFF7A85: // 6
       break;
-    case 0xFF10EF:
-      Serial.println("7    ");
+    case 0xFF10EF: // 7
       break;
-    case 0xFF38C7:
-      Serial.println("8    ");
+    case 0xFF38C7: // 8
       break;
-    case 0xFF5AA5:
-      Serial.println("9    ");
+    case 0xFF5AA5: // 9
       break;
-    case 0xFF4AB5:
-      Serial.println("0    ");
+    case 0xFF4AB5: // 0
       break;
     case 0xFF42BD: // *
-      lcdPrint(0, 1, "SET CLOCK   ");
-      set_clock_hour = rtc.getHour();
-      set_clock_min = rtc.getMinute();
-      set_clock_sec = rtc.getSecond();
-      set_clock_stage = 0;
-      current_screen = 2;
       break;
     case 0xFF52AD: // #
-      if (backlight_state == 0) {
-        Serial.println("Backlight : Off");
-        backlight_state = 1;
-        lcd.noBacklight();
-      } else {
-        Serial.println("Backlight : On");
-        backlight_state = 0;
-        lcd.backlight();
-      }
-      delay(500);
+      Serial.println("Backlight : With remote : Start");
+      toggleBacklight();
+      Serial.println("Backlight : With remote : End");
       break;
-    case 0xFF02FD:
-      Serial.println("OK   ");
-      lcdPrint(0, 1, "OK   ");
-      if (current_screen == 2) {
-        set_clock_stage++;
-      }
+    case 0xFF02FD: // OK
       break;
     case 0xFF22DD:
       Serial.println("LEFT ");
       break;
-    case 0xFF629D:
+    case 0xFF629D: // Up
       Serial.println("UP   ");
-      if (current_screen == 2) {
-        if (set_clock_stage == 0) { // Set hour
-          set_clock_hour++;
-          if (set_clock_hour > 23) {
-            set_clock_hour = 0;
-          }
-        } else if (set_clock_stage == 1) { // Set min
-          set_clock_min++;
-          if (set_clock_min > 59) {
-            set_clock_min = 0;
-          }
-        } else if (set_clock_stage == 2) { // Set Sec
-          set_clock_sec++;
-          if (set_clock_sec > 59) {
-            set_clock_sec = 0;
-          }
-        }
-      }
-
       break;
     case 0xFFC23D:
       Serial.println("RIGHT");
       break;
     case 0xFFA857: //*
-      if (current_screen == 2) {
-        if (set_clock_stage == 0) { // Set hour
-          set_clock_hour--;
-          if (set_clock_hour < 0) {
-            set_clock_hour = 23;
-          }
-        } else if (set_clock_stage == 1) { // Set min
-          set_clock_min--;
-          if (set_clock_min < 0) {
-            set_clock_min = 59;
-          }
-        } else if (set_clock_stage == 2) { // Set Sec
-          set_clock_sec--;
-          if (set_clock_sec < 0) {
-            set_clock_sec = 59;
-          }
-        }
-      }
       break;
   }
 }
@@ -269,88 +219,65 @@ void lcdClear() {
   lcdPrint(0, 0, "                ");
   lcdPrint(0, 1, "                ");
 }
-void checkBacklightButton() {
-  if (digitalRead(backlight_toggle)) {
-    if (backlight_state == 0) {
-      Serial.println("Backlight : Off");
-      backlight_state = 1;
-      lcd.noBacklight();
-    } else {
-      Serial.println("Backlight : On");
-      backlight_state = 0;
-      lcd.backlight();
-    }
-    delay(1000);
+
+void toggleBacklight() {
+  Serial.println("Backlight : Start");
+  delay(1000);
+  Serial.println("Backlight : Delay done");
+  if (backlight_state == 0) {
+    Serial.println("Backlight : Off");
+    backlight_state = 1;
+    lcd.noBacklight();
+    Serial.println("Backlight : Off : End");
+  } else {
+    Serial.println("Backlight : On");
+    backlight_state = 0;
+    lcd.backlight();
+    Serial.println("Backlight : On : End");
   }
+  delay(1000);
+  Serial.println("Backlight : End");
 }
 
 void loop()
 {
+  if (digitalRead(backlight_toggle)) {
+    Serial.println("Backlight : With button : Start");
+    toggleBacklight();
+    Serial.println("Backlight : With button : End");
+  }
 
-  Serial.println("--> Check backlight button");
-  checkBacklightButton();
-
-  Serial.println("--> Print current time");
   lcdPrint(0, 0, rtc.formatTime());
 
-  Serial.println("--> Check remote");
   if (irrecv.decode(&results)) {
+    Serial.println(results.value);
     decode_value(results.value);
-    screen_counter = 0;
     irrecv.resume();
   }
 
+  hour = rtc.getHour();
+  minute = rtc.getMinute();
+  second = rtc.getSecond();
 
-  //if (current_screen == 1) { // button clicked display
-  //    Serial.println("--> Current 1");
-  //    Serial.print("Screen counter: ");
-  //    Serial.println(screen_counter);
-  //    screen_counter++;
-  //    if (screen_counter == 50) {
-  //      current_screen = 0;
-  //      screen_counter = 0;
-  //    }
-  //    lcdPrint(0, 0, rtc.formatTime());
-  //    lcdPrint(9, 0, "        ");
-  //  } else if (current_screen == 2) { // Set clock display
-  //    Serial.println("--> Current 2");
-  //    if (screen_counter == 500) {
-  //      current_screen = 0;
-  //      screen_counter = 0;
-  //    }
-  //    screen_counter++;
-  //    lcd.setCursor(0, 0);
-  //    lcd.print("SET: ");
-  //    delay(50);
-  //    printDigits(set_clock_hour);
-  //    lcd.print(":");
-  //    delay(50);
-  //    printDigits(set_clock_min);
-  //    lcd.print(":");
-  //    delay(50);
-  //    printDigits(set_clock_sec);
-  //    lcd.print("                ");
-  //    delay(50);
-  //    lcd.setCursor(0, 1);
-  //    if (set_clock_stage == 0) {
-  //      lcd.print("HOUR U/D --> OK");
-  //      delay(50);
-  //      lcd.setCursor(0, 5);
-  //    } else if (set_clock_stage == 1) {
-  //      lcd.print("MIN U/D --> OK");
-  //      delay(50);
-  //      lcd.setCursor(0, 8);
-  //    } else if (set_clock_stage == 2) {
-  //      lcd.print("SEC U/D --> OK");
-  //      delay(50);
-  //      lcd.setCursor(0, 11);
-  //    } else if (set_clock_stage == 3) {
-  //      rtc.setTime(set_clock_hour, set_clock_min, set_clock_sec);
-  //      current_screen = 0;
-  //      screen_counter = 0;
-  //      set_clock_stage = 0;
-  //    }
-  //  }
+  // Trigger close
+  if (((hour == 16) && (minute == 12)) && trigger_close == false) {
+    Serial.println("Close timer : Triggering");
+    closeBlinds();
+    trigger_close = true;
+  } else if (((hour == 16) && (minute == 13)) && trigger_close == true) {
+    trigger_close = false;
+    Serial.println("Close timer : Resetting");
+  }
 
-  Serial.println("--> End loop");
+  // Trigger open
+  if (((hour == 16) && (minute == 14)) && trigger_open == false) {
+    Serial.println("Open timer : Triggering");
+    openBlinds();
+    trigger_open = true;
+  } else if (((hour == 16) && (minute == 15)) && trigger_open == true) {
+    trigger_open = false;
+    Serial.println("Open timer : Resetting");
+  }
+
+
 }
