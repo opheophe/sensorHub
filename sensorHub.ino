@@ -1,6 +1,5 @@
 #include <Wire.h>
 #include <Rtc_Pcf8563.h>
-#include <LiquidCrystal_I2C.h>
 #include <IRremote.h>
 #include <Servo.h>
 #include <Math.h>
@@ -8,7 +7,6 @@
 
 //init the real time clock
 Rtc_Pcf8563 rtc;
-LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 // INIT IR-reciever
 int RECV_PIN = 2;
@@ -47,7 +45,6 @@ long millismod = 0;
 
 void closeBlinds() {
   Serial.println("Closing");
-  //lcdPrint(0, 1, "Closing blinds  ");
   moveto(1, 0);
   moveto(2, 180);
   Serial.println("Closing : Done");
@@ -55,119 +52,10 @@ void closeBlinds() {
 
 void openBlinds() {
   Serial.println("Opening");
-  //lcdPrint(0, 1, "Opening blinds  ");
   moveto(1, 180);
   moveto(2, 0);
   Serial.println("Opening : Done");
 }
-
-class Alarm {
-    boolean triggered = false;
-    boolean active = false;
-    int hour = 0;
-    int minute = 0;
-    int second = 0;
-    String action = "";
-
-  public:
-    void setup() {
-
-    }
-
-    String getAction() {
-      Serial.print("--> Current 0 Get action : ");
-      Serial.println(action);
-      return action;
-    }
-
-    void start() {
-      active = true;
-    }
-
-    void stop() {
-      active = false;
-    }
-
-    void reset() {
-      active = true;
-      triggered = false;
-    }
-
-    void set(String a, int h, int m, int s) {
-      action = a;
-      hour = h;
-      minute = m;
-      second = s;
-      triggered = false;
-      active = true;
-    }
-
-    String getAlarm() {
-      char buffer[50];
-      sprintf(buffer, "%02d:%02d:%02d", hour, minute, second);
-      return String(buffer);
-    }
-
-    long getTimeLeft() {
-      Serial.println("--> Current 0 : Get time left : Start");
-      long left = (hour * 60L * 60L + minute * 60L + second * 1L) -
-                  (rtc.getHour() * 60L * 60L + rtc.getMinute() * 60L + rtc.getSecond() * 1L);
-
-      Serial.println("--> Current 0 : Get time left : If");
-      if ((left < -60) || (triggered && (left < 0 ) )) {
-        left = left + 24 * 60 * 60L;
-      }
-      Serial.print("--> Current 0 : Get time left : Return : ");
-      Serial.println(left);
-      return left;
-    }
-
-    String getTimeLeftFormat() {
-      long time_left = getTimeLeft();
-      int hours = numberOfHours(time_left);
-      int minutes = numberOfMinutes(time_left);
-      int seconds = numberOfSeconds(time_left);
-      char buffer[50];
-      sprintf(buffer, "%02d:%02d:%02d", hours, minutes, seconds);
-      return (String(buffer));
-
-
-    }
-
-    boolean checkAlarm() {
-      //      if  ((rtc.getHour() == hour) && rtc.getMinute() == minute) {
-      long timeLeft = getTimeLeft();
-
-      if ( (timeLeft < 1) && (timeLeft > -60)) {
-        if (triggered) {
-          // Do nothing, already triggered
-        } else {
-          triggered = true;
-          //   Serial.println("ALAAAAAAARM");
-          if (action == "CLOSE") {
-            Serial.print(action);
-            Serial.print(": ");
-            Serial.print(getTimeLeftFormat());
-            Serial.print(": ");
-            Serial.print(getTimeLeft());
-            Serial.print(" ");
-            closeBlinds();
-          } else if (action == "OPEN") {
-            openBlinds();
-          }
-          return true;
-        }
-      } else if (timeLeft < -60) {
-        triggered = false;
-      }
-      return false;
-    }
-
-
-};
-
-Alarm alarmClose;
-Alarm alarmOpen;
 
 void setup()
 {
@@ -175,20 +63,13 @@ void setup()
   setRTC_clock();
   setMillisMod();
 
-  // INIT LCD
-  lcd.init();
-  lcd.backlight();
-  lcdPrint(0, 0, "                ");
-  lcdPrint(0, 1, "                ");
-
   // INIT IR recieve
   irrecv.enableIRIn();
 
   // Allows toggling of backligt
   pinMode(backlight_toggle, INPUT);
   Serial.begin(9600);
-  alarmClose.set("CLOSE", 21, 30, 0);
-  alarmOpen.set("OPEN", 8, 0, 0);
+
 
 
 
@@ -210,7 +91,7 @@ void printMillisTime(long val) {
   int seconds = numberOfSeconds(val);
   char buffer[50];
   sprintf(buffer, "%02d:%02d:%02d", hours, minutes, seconds);
-  lcdPrint(0, 1, String(buffer));
+
 }
 
 void moveto(int servonum, int angle) {
@@ -233,23 +114,14 @@ void moveto(int servonum, int angle) {
 String decode_value(unsigned long input) {
   switch (input)  {
     case 0xFF6897: //1
-      current_screen = 1;
       closeBlinds();
       break;
     case 0xFF9867: //2
-      current_screen = 1;
-      Serial.println("Turning 90   ");
-      lcdPrint(0, 1, "Turning 90   ");
-      moveto(1, 90);
-
-      moveto(2, 90);
       break;
     case 0xFFB04F: // 3
-      current_screen = 1;
       openBlinds();
       break;
     case 0xFF30CF:
-      Serial.println("4    ");
       break;
     case 0xFF18E7:
       Serial.println("5    ");
@@ -270,7 +142,7 @@ String decode_value(unsigned long input) {
       Serial.println("0    ");
       break;
     case 0xFF42BD: // *
-      lcdPrint(0, 1, "SET CLOCK   ");
+
       set_clock_hour = rtc.getHour();
       set_clock_min = rtc.getMinute();
       set_clock_sec = rtc.getSecond();
@@ -279,19 +151,19 @@ String decode_value(unsigned long input) {
       break;
     case 0xFF52AD: // #
       Serial.println("Backlight");
-      lcdPrint(0, 1, "Backlight");
+
       if (backlight_state == 0) {
         backlight_state = 1;
-        lcd.noBacklight();
+
       } else {
         backlight_state = 0;
-        lcd.backlight();
+
       }
       delay(1000);
       break;
     case 0xFF02FD:
       Serial.println("OK   ");
-      lcdPrint(0, 1, "OK   ");
+
       if (current_screen == 2) {
         set_clock_stage++;
       }
@@ -347,84 +219,11 @@ String decode_value(unsigned long input) {
   }
 }
 
-void lcdPrint(int col, int row, String text) {
-  lcd.setCursor(col, row);
-  lcd.print(text);
-  delay(50);
-}
-
-void lcdPrint(int col, int row, int text) {
-  lcd.setCursor(col, row);
-  lcd.print(text);
-  delay(50);
-}
-
-void lcdPrint(int col, int row, long text) {
-  delay(200);
-  lcd.setCursor(col, row);
-  lcd.print(text);
-  delay(200);
-}
-
-void lcdAppend(String text) {
-  delay(200);
-  lcd.print(text);
-  delay(200);
-}
-
-void lcdAppend(int text) {
-  delay(200);
-  lcd.print(text);
-  delay(200);
-}
-
-void lcdAppend(long text) {
-  delay(200);
-  lcd.print(text);
-  delay(200);
-}
-
-void lcdClear() {
-  lcdPrint(0, 0, "                ");
-  lcdPrint(0, 1, "                ");
-}
-void checkBacklightButton() {
-  if (digitalRead(backlight_toggle)) {
-    if (backlight_state == 0) {
-      backlight_state = 1;
-      lcd.noBacklight();
-    } else {
-      backlight_state = 0;
-      lcd.backlight();
-    }
-    delay(1000);
-  }
-}
 
 void loop()
 {
-  Serial.println("--> Check Alarm : Close");
-  alarmClose.checkAlarm();
 
-  Serial.println("--> Check Alarm : Open");
-  alarmOpen.checkAlarm();
 
-  Serial.println("--> Check backlight button");
-  checkBacklightButton();
-
-  Serial.println("--> Print current time");
-  lcdPrint(0, 0, rtc.formatTime());
-
-  Serial.println("--> Print next alarm");
-  if (alarmClose.getTimeLeft() > alarmOpen.getTimeLeft()) {
-    Serial.println("--> Print next alarm : Alarm Open");
-    lcdPrint(0, 1, alarmOpen.getTimeLeftFormat());
-    lcdPrint(9, 1, alarmOpen.getAction());
-  } else {
-    Serial.println("--> Print next alarm : Alarm Close");
-    lcdPrint(0, 1, alarmClose.getTimeLeftFormat());
-    lcdPrint(9, 1, alarmClose.getAction());
-  }
 
   Serial.println("--> Check remote");
   if (irrecv.decode(&results)) {
@@ -432,58 +231,6 @@ void loop()
     screen_counter = 0;
     irrecv.resume();
   }
-
-
-  //if (current_screen == 1) { // button clicked display
-  //    Serial.println("--> Current 1");
-  //    Serial.print("Screen counter: ");
-  //    Serial.println(screen_counter);
-  //    screen_counter++;
-  //    if (screen_counter == 50) {
-  //      current_screen = 0;
-  //      screen_counter = 0;
-  //    }
-  //    lcdPrint(0, 0, rtc.formatTime());
-  //    lcdPrint(9, 0, "        ");
-  //  } else if (current_screen == 2) { // Set clock display
-  //    Serial.println("--> Current 2");
-  //    if (screen_counter == 500) {
-  //      current_screen = 0;
-  //      screen_counter = 0;
-  //    }
-  //    screen_counter++;
-  //    lcd.setCursor(0, 0);
-  //    lcd.print("SET: ");
-  //    delay(50);
-  //    printDigits(set_clock_hour);
-  //    lcd.print(":");
-  //    delay(50);
-  //    printDigits(set_clock_min);
-  //    lcd.print(":");
-  //    delay(50);
-  //    printDigits(set_clock_sec);
-  //    lcd.print("                ");
-  //    delay(50);
-  //    lcd.setCursor(0, 1);
-  //    if (set_clock_stage == 0) {
-  //      lcd.print("HOUR U/D --> OK");
-  //      delay(50);
-  //      lcd.setCursor(0, 5);
-  //    } else if (set_clock_stage == 1) {
-  //      lcd.print("MIN U/D --> OK");
-  //      delay(50);
-  //      lcd.setCursor(0, 8);
-  //    } else if (set_clock_stage == 2) {
-  //      lcd.print("SEC U/D --> OK");
-  //      delay(50);
-  //      lcd.setCursor(0, 11);
-  //    } else if (set_clock_stage == 3) {
-  //      rtc.setTime(set_clock_hour, set_clock_min, set_clock_sec);
-  //      current_screen = 0;
-  //      screen_counter = 0;
-  //      set_clock_stage = 0;
-  //    }
-  //  }
 
   Serial.println("--> End loop");
 }
