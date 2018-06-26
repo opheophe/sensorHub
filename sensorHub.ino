@@ -75,6 +75,8 @@ class Alarm {
     }
 
     String getAction() {
+      Serial.print("--> Current 0 Get action : ");
+      Serial.println(action);
       return action;
     }
 
@@ -117,14 +119,16 @@ class Alarm {
     }
 
     long getTimeLeft() {
+      Serial.println("--> Current 0 : Get time left : Start");
       long left = (hour * 60L * 60L + minute * 60L + second * 1L) -
                   (rtc.getHour() * 60L * 60L + rtc.getMinute() * 60L + rtc.getSecond() * 1L);
 
-
+      Serial.println("--> Current 0 : Get time left : If");
       if ((left < -60) || (triggered && (left < 0 ) )) {
         left = left + 24 * 60 * 60L;
       }
-
+      Serial.print("--> Current 0 : Get time left : Return : ");
+      Serial.println(left);
       return left;
     }
 
@@ -392,10 +396,12 @@ String decode_value(unsigned long input) {
 
 void loop()
 {
-
+  Serial.println("--> Loop start");
   alarmClose.checkAlarm();
   alarmOpen.checkAlarm();
 
+
+  Serial.println("--> Backlight");
   if (digitalRead(backlight_toggle)) {
     if (backlight_state == 0) {
       backlight_state = 1;
@@ -407,23 +413,39 @@ void loop()
     delay(1000);
   }
 
+  Serial.println("--> Screen loop");
   if (current_screen == 0) { // default display
+    Serial.println("--> Current 0");
     lcd.setCursor(0, 0);
     lcd.print(rtc.formatTime());
     lcd.print("                ");
     lcd.setCursor(0, 1);
-
+    Serial.println("--> Current 0 : Check alarm");
     if (alarmClose.getTimeLeft() > alarmOpen.getTimeLeft()) {
+      Serial.println("--> Current 0 : Check alarm : Print get time");
       lcd.print(alarmOpen.getTimeLeftFormat());
-      lcd.print(" ");
-      lcd.print(alarmOpen.getAction());
+      lcd.setCursor(10, 1);
+      Serial.println("--> Current 0 : Check alarm : Get action");
+      String temp=alarmOpen.getAction();
+      Serial.print("--> Current 0 : Check alarm : Print action : ");
+      Serial.println(temp);
+      lcd.print(temp);
     } else {
+      Serial.println("--> Current 0 : Check alarm : Print get time");
       lcd.print(alarmClose.getTimeLeftFormat());
-      lcd.print(" ");
-      lcd.print(alarmClose.getAction());
+      lcd.setCursor(10, 1);
+      Serial.println("--> Current 0 : Check alarm : Get action");
+      String temp=alarmClose.getAction();
+      Serial.print("--> Current 0 : Check alarm : Print action : ");
+      Serial.println(temp);
+      lcd.print(temp);
     }
+    Serial.println("--> Current 0 : Check alarm : Done");
     lcd.print("                ");
   } else if (current_screen == 1) { // button clicked display
+    Serial.println("--> Current 1");
+    Serial.print("Screen counter: ");
+    Serial.println(screen_counter);
     screen_counter++;
     if (screen_counter == 50) {
       current_screen = 0;
@@ -434,6 +456,7 @@ void loop()
     lcd.print(rtc.formatTime());
     lcd.print("                ");
   } else if (current_screen == 2) { // Set clock display
+    Serial.println("--> Current 2");
     if (screen_counter == 500) {
       current_screen = 0;
       screen_counter = 0;
@@ -465,6 +488,7 @@ void loop()
     }
   }
 
+  Serial.println("--> Remote");
   if (irrecv.decode(&results)) {
     lcd.setCursor(0, 1);
     lcd.print("                ");
