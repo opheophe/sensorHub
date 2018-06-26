@@ -91,7 +91,7 @@ void setMillisMod() {
 
 void setRTC_clock() {
   //day, weekday, month, century(1=1900, 0=2000), year(0-99)
-  rtc.setDate(16, 5, 6, 0, 18);
+//  rtc.setDate(16, 5, 6, 0, 18);
 }
 
 
