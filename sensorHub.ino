@@ -20,16 +20,10 @@ int servo1_pin = 12;
 int servo2_pin = 11;
 Servo servo1;
 Servo servo2;
-boolean debug_mode = false;
 
-
-// These are used for the internal clock
-/* Useful Constants */
 #define SECS_PER_MIN  (60UL)
 #define SECS_PER_HOUR (3600UL)
 #define SECS_PER_DAY  (SECS_PER_HOUR * 24L)
-
-/* Useful Macros for getting elapsed time */
 #define numberOfSeconds(_time_) (_time_ % SECS_PER_MIN)
 #define numberOfMinutes(_time_) ((_time_ / SECS_PER_MIN) % SECS_PER_MIN)
 #define numberOfHours(_time_) (( _time_% SECS_PER_DAY) / SECS_PER_HOUR)
@@ -37,7 +31,6 @@ boolean debug_mode = false;
 
 const int backlight_toggle = 3;
 int backlight_state = 0;
-int current_screen = 0;
 int screen_counter = 0;
 int set_clock_stage = 0;
 int set_clock_hour = 0;
@@ -260,21 +253,21 @@ void loop()
   second = rtc.getSecond();
 
   // Trigger close
-  if (((hour == 16) && (minute == 12)) && trigger_close == false) {
+  if (((hour == 21) && (minute == 30)) && trigger_close == false) {
     Serial.println("Close timer : Triggering");
     closeBlinds();
     trigger_close = true;
-  } else if (((hour == 16) && (minute == 13)) && trigger_close == true) {
+  } else if (((hour == 21) && (minute == 31)) && trigger_close == true) {
     trigger_close = false;
     Serial.println("Close timer : Resetting");
   }
 
   // Trigger open
-  if (((hour == 16) && (minute == 14)) && trigger_open == false) {
+  if (((hour == 8) && (minute == 0)) && trigger_open == false) {
     Serial.println("Open timer : Triggering");
     openBlinds();
     trigger_open = true;
-  } else if (((hour == 16) && (minute == 15)) && trigger_open == true) {
+  } else if (((hour == 8) && (minute == 1)) && trigger_open == true) {
     trigger_open = false;
     Serial.println("Open timer : Resetting");
   }
