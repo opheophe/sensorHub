@@ -1,6 +1,5 @@
 #include <Wire.h>
 #include <Rtc_Pcf8563.h>
-#include <LiquidCrystal_I2C.h>
 #include <IRremote.h>
 #include <Servo.h>
 #include <Math.h>
@@ -8,7 +7,6 @@
 
 //init the real time clock
 Rtc_Pcf8563 rtc;
-LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 // INIT IR-reciever
 int RECV_PIN = 2;
@@ -29,8 +27,6 @@ Servo servo2;
 #define numberOfHours(_time_) (( _time_% SECS_PER_DAY) / SECS_PER_HOUR)
 #define elapsedDays(_time_) ( _time_ / SECS_PER_DAY)
 
-const int backlight_toggle = 3;
-int backlight_state = 0;
 int screen_counter = 0;
 int set_clock_stage = 0;
 int set_clock_hour = 0;
@@ -48,28 +44,22 @@ boolean trigger_open = false;
 
 void closeBlinds() {
   Serial.println("Closing");
-  lcdPrint(0, 1, "Closing blinds  ");
   moveto(1, 0);
   moveto(2, 180);
-  lcdPrint(0, 1, "                ");
   Serial.println("Closing : Done");
 }
 
 void openBlinds() {
   Serial.println("Opening");
-  lcdPrint(0, 1, "Opening blinds  ");
   moveto(1, 180);
   moveto(2, 0);
-  lcdPrint(0, 1, "                ");
   Serial.println("Opening : Done");
 }
 
 void halfBlinds() {
   Serial.println("Half-open blinds");
-  lcdPrint(0, 1, "Half-open blinds");
   moveto(1, 90);
   moveto(2, 90);
-  lcdPrint(0, 1, "                ");
   Serial.println("Opening : Done");
 }
 
@@ -78,19 +68,10 @@ void setup()
 {
   setMillisMod();
 
-  // INIT LCD
-  lcd.init();
-  lcd.backlight();
-  lcdPrint(0, 0, "                ");
-  lcdPrint(0, 1, "                ");
-
   // INIT IR recieve
   irrecv.enableIRIn();
-
-  // Allows toggling of backligt
-  pinMode(backlight_toggle, INPUT);
   Serial.begin(9600);
-
+  Serial.println("Starting");
 }
 
 void setMillisMod() {
@@ -103,20 +84,22 @@ void printMillisTime(long val) {
   int seconds = numberOfSeconds(val);
   char buffer[50];
   sprintf(buffer, "%02d:%02d:%02d", hours, minutes, seconds);
-  lcdPrint(0, 1, String(buffer));
+  Serial.println(String(buffer));
 }
 
 void moveto(int servonum, int angle) {
   if (servonum == 1) {
     servo1.attach(servo1_pin);
     servo1.write(angle);
-    delay(1000);
+    delay(750);
     servo1.detach();
+    delay(250);
   } else {
     servo2.attach(servo2_pin);
     servo2.write(angle);
-    delay(1000);
+    delay(750);
     servo2.detach();
+    delay(250);
   }
 }
 
@@ -151,9 +134,6 @@ String decode_value(unsigned long input) {
     case 0xFF42BD: // *
       break;
     case 0xFF52AD: // #
-      Serial.println("Backlight : With remote : Start");
-      toggleBacklight();
-      Serial.println("Backlight : With remote : End");
       break;
     case 0xFF02FD: // OK
       break;
@@ -171,82 +151,22 @@ String decode_value(unsigned long input) {
   }
 }
 
-void lcdPrint(int col, int row, String text) {
-  lcd.setCursor(col, row);
-  lcd.print(text);
-  delay(50);
-}
 
-void lcdPrint(int col, int row, int text) {
-  lcd.setCursor(col, row);
-  lcd.print(text);
-  delay(50);
-}
-
-void lcdPrint(int col, int row, long text) {
-  delay(200);
-  lcd.setCursor(col, row);
-  lcd.print(text);
-  delay(200);
-}
-
-void lcdAppend(String text) {
-  delay(200);
-  lcd.print(text);
-  delay(200);
-}
-
-void lcdAppend(int text) {
-  delay(200);
-  lcd.print(text);
-  delay(200);
-}
-
-void lcdAppend(long text) {
-  delay(200);
-  lcd.print(text);
-  delay(200);
-}
-
-void lcdClear() {
-  lcdPrint(0, 0, "                ");
-  lcdPrint(0, 1, "                ");
-}
-
-void toggleBacklight() {
-  Serial.println("Backlight : Start");
-  delay(1000);
-  Serial.println("Backlight : Delay done");
-  if (backlight_state == 0) {
-    Serial.println("Backlight : Off");
-    backlight_state = 1;
-    lcd.noBacklight();
-    Serial.println("Backlight : Off : End");
-  } else {
-    Serial.println("Backlight : On");
-    backlight_state = 0;
-    lcd.backlight();
-    Serial.println("Backlight : On : End");
-  }
-  delay(1000);
-  Serial.println("Backlight : End");
-}
 
 void loop()
 {
-  if (digitalRead(backlight_toggle)) {
-    Serial.println("Backlight : With button : Start");
-    toggleBacklight();
-    Serial.println("Backlight : With button : End");
-  }
-
-  lcdPrint(0, 0, rtc.formatTime());
-
   if (irrecv.decode(&results)) {
+    //   digitalWrite(led_pin_rec,HIGH);
     Serial.println(results.value);
     decode_value(results.value);
     irrecv.resume();
+    //   delay(25);
+    //  digitalWrite(led_pin_rec,LOW);
   }
+
+  // This is needed for the clock to update
+  rtc.formatTime();
+  //Serial.println(rtc.formatTime());
 
   hour = rtc.getHour();
   minute = rtc.getMinute();
