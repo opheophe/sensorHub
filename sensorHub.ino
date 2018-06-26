@@ -7,6 +7,7 @@
 
 //init the real time clock
 Rtc_Pcf8563 rtc;
+int led_pin=4;
 
 // INIT IR-reciever
 int RECV_PIN = 2;
@@ -70,6 +71,7 @@ void setup()
 
   // INIT IR recieve
   irrecv.enableIRIn();
+  pinMode(led_pin, OUTPUT);
   Serial.begin(9600);
   Serial.println("Starting");
 }
@@ -156,12 +158,12 @@ String decode_value(unsigned long input) {
 void loop()
 {
   if (irrecv.decode(&results)) {
-    //   digitalWrite(led_pin_rec,HIGH);
+    digitalWrite(led_pin,HIGH);
     Serial.println(results.value);
     decode_value(results.value);
     irrecv.resume();
-    //   delay(25);
-    //  digitalWrite(led_pin_rec,LOW);
+     delay(25);
+     digitalWrite(led_pin,LOW);
   }
 
   // This is needed for the clock to update
