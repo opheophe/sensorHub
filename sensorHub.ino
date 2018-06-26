@@ -64,8 +64,6 @@ void openBlinds() {
 
 void setup()
 {
-  // Init clock
-  setRTC_clock();
   setMillisMod();
 
   // INIT LCD
@@ -81,19 +79,11 @@ void setup()
   pinMode(backlight_toggle, INPUT);
   Serial.begin(9600);
 
-
-
 }
 
 void setMillisMod() {
   millismod = rtc.getSecond() * 1L + rtc.getMinute() * 1 * 60L + rtc.getHour() * 1 * 60 * 60L;
 }
-
-void setRTC_clock() {
-  //day, weekday, month, century(1=1900, 0=2000), year(0-99)
-//  rtc.setDate(16, 5, 6, 0, 18);
-}
-
 
 void printMillisTime(long val) {
   int hours = numberOfHours(val);
