@@ -16,7 +16,7 @@ decode_results results;
 
 // Servo
 int servo1_pin = 12;
-int servo2_pin = 11;
+int servo2_pin = 13;
 Servo servo1;
 Servo servo2;
 
