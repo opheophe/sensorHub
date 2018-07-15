@@ -167,8 +167,8 @@ void loop()
   }
 
   // This is needed for the clock to update
-  rtc.formatTime();
-  //Serial.println(rtc.formatTime());
+ // rtc.formatTime();
+  Serial.println(rtc.formatTime());
 
   hour = rtc.getHour();
   minute = rtc.getMinute();
