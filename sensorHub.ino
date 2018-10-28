@@ -185,11 +185,11 @@ void loop()
   }
 
   // Trigger open
-  if (((hour == 8) && (minute == 0)) && trigger_open == false) {
+  if (((hour == 8) && (minute == 10)) && trigger_open == false) {
     Serial.println("Open timer : Triggering");
     openBlinds();
     trigger_open = true;
-  } else if (((hour == 8) && (minute == 1)) && trigger_open == true) {
+  } else if (((hour == 8) && (minute == 11)) && trigger_open == true) {
     trigger_open = false;
     Serial.println("Open timer : Resetting");
   }
