@@ -1,3 +1,8 @@
+// Board: Arduino Nano
+// Processor: ATmega338P (Old)
+// Programmer: AVRISP mkII
+
+
 #include <Wire.h>
 #include <Rtc_Pcf8563.h>
 #include <IRremote.h>
@@ -64,11 +69,17 @@ void halfBlinds() {
   Serial.println("Opening : Done");
 }
 
+void rtcSetTime(){
+   /* day, weekday, month, century, year */
+  //rtc.setDate(6, 5, 10, 0, 17);
+  /* hr, min, sec */
+  rtc.setTime(20, 56, 0);
+}
 
 void setup()
 {
   setMillisMod();
-
+//rtcSetTime();
   // INIT IR recieve
   irrecv.enableIRIn();
   pinMode(led_pin, OUTPUT);
@@ -196,4 +207,3 @@ void loop()
 
 
 }
-
